@@ -12,4 +12,9 @@ export interface TeleportCluster {
 export interface TeleportConfig {
   tshPath: string
   defaultUser: string
+  proxy: string
+  loginUser: string
+  authType: string
+  cluster: string
+  env: Record<string, string>
 }

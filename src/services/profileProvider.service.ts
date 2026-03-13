@@ -30,13 +30,41 @@ export class TeleportProfileProvider extends ProfileProvider<LocalProfile> {
   async getBuiltinProfiles (): Promise<PartialProfile<LocalProfile>[]> {
     try {
       const loggedIn = await this.teleport.isLoggedIn()
+      const tshPath = this.config.store.teleport?.tshPath ?? 'tsh'
+
+      const env = this.config.store.teleport?.env ?? {}
+      const hasEnv = Object.keys(env).length > 0
+
       if (!loggedIn) {
-        return []
+        const loginArgs = ['login']
+        const proxy = this.config.store.teleport?.proxy
+        const loginUser = this.config.store.teleport?.loginUser
+        const authType = this.config.store.teleport?.authType
+        const cluster = this.config.store.teleport?.cluster
+        if (proxy) { loginArgs.push(`--proxy=${proxy}`) }
+        if (loginUser) { loginArgs.push(`--user=${loginUser}`) }
+        if (authType) { loginArgs.push(`--auth=${authType}`) }
+        if (cluster) { loginArgs.push(cluster) }
+
+        return [{
+          id: 'teleport:login',
+          type: 'local',
+          name: 'Teleport: Login',
+          group: 'Teleport',
+          icon: 'fas fa-sign-in-alt',
+          options: {
+            command: tshPath,
+            args: loginArgs,
+            pauseAfterExit: true,
+            ...hasEnv && { env },
+          },
+          isBuiltin: true,
+          isTemplate: false,
+        }]
       }
 
       const nodes = await this.teleport.listNodes()
       const user = this.config.store.teleport?.defaultUser ?? 'root'
-      const tshPath = this.config.store.teleport?.tshPath ?? 'tsh'
 
       return nodes.map(node => ({
         id: `teleport:${node.spec.hostname}`,
@@ -47,6 +75,7 @@ export class TeleportProfileProvider extends ProfileProvider<LocalProfile> {
         options: {
           command: tshPath,
           args: ['ssh', `${user}@${node.spec.hostname}`],
+          ...hasEnv && { env },
         },
         isBuiltin: true,
         isTemplate: false,

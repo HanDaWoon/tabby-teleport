@@ -9,11 +9,33 @@ import { TeleportService } from '../services/teleport.service'
 export class TeleportSettingsComponent {
   testResult: 'success' | 'error' | null = null
   testError = ''
+  newEnvKey = ''
+  newEnvValue = ''
 
   constructor (
     public config: ConfigService,
     private teleport: TeleportService,
   ) {}
+
+  get envEntries (): [string, string][] {
+    return Object.entries(this.config.store.teleport?.env ?? {})
+  }
+
+  addEnvVar (): void {
+    if (!this.newEnvKey.trim()) { return }
+    if (!this.config.store.teleport.env) {
+      this.config.store.teleport.env = {}
+    }
+    this.config.store.teleport.env[this.newEnvKey.trim()] = this.newEnvValue
+    this.newEnvKey = ''
+    this.newEnvValue = ''
+    this.config.save()
+  }
+
+  removeEnvVar (key: string): void {
+    delete this.config.store.teleport.env[key]
+    this.config.save()
+  }
 
   async testConnection (): Promise<void> {
     this.testResult = null

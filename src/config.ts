@@ -7,6 +7,11 @@ export class TeleportConfigProvider extends ConfigProvider {
     teleport: {
       tshPath: 'tsh',
       defaultUser: 'root',
+      proxy: '',
+      loginUser: '',
+      authType: '',
+      cluster: '',
+      env: {},
     },
   }
 }
