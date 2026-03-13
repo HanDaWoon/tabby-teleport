@@ -1,0 +1,27 @@
+h3.mb-4 Teleport Settings
+
+.form-group.mb-3
+  label.form-label tsh Path
+  input.form-control(
+    type="text",
+    [(ngModel)]="config.store.teleport.tshPath",
+    (ngModelChange)="config.save()",
+    placeholder="tsh"
+  )
+  small.form-text.text-muted Path to the tsh binary. Leave as "tsh" if it's in your PATH.
+
+.form-group.mb-3
+  label.form-label Default User
+  input.form-control(
+    type="text",
+    [(ngModel)]="config.store.teleport.defaultUser",
+    (ngModelChange)="config.save()",
+    placeholder="root"
+  )
+  small.form-text.text-muted Default SSH username for Teleport connections.
+
+button.btn.btn-primary((click)="testConnection()")
+  i.fas.fa-plug.me-2
+  | Test Connection
+span.ms-2.text-success(*ngIf="testResult === 'success'") Connected!
+span.ms-2.text-danger(*ngIf="testResult === 'error'") {{ testError }}

@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2016",
+    "module": "es2015",
+    "moduleResolution": "node",
+    "lib": ["DOM", "ES2015", "ES7"],
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": "src/",
+    "sourceMap": true,
+    "declaration": true,
+    "declarationDir": "dist/"
+  },
+  "exclude": ["node_modules", "dist"]
+}
