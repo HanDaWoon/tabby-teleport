@@ -1,11 +1,15 @@
 {
   "name": "tabby-teleport",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Teleport integration for Tabby terminal",
   "author": "handawoon",
-  "keywords": ["tabby-plugin"],
+  "keywords": [
+    "tabby-plugin"
+  ],
   "main": "dist/index.js",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "webpack --progress --color",
     "watch": "webpack --progress --color --watch"
