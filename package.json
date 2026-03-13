@@ -5,6 +5,7 @@
   "author": "handawoon",
   "keywords": ["tabby-plugin"],
   "main": "dist/index.js",
+  "files": ["dist"],
   "scripts": {
     "build": "webpack --progress --color",
     "watch": "webpack --progress --color --watch"
