@@ -1,7 +1,11 @@
 export interface TeleportNode {
-  metadata: { name: string }
+  metadata: {
+    name: string
+    labels?: Record<string, string>
+  }
   spec: { hostname: string; addr: string }
   kind: string
+  cluster?: string
 }
 
 export interface TeleportCluster {

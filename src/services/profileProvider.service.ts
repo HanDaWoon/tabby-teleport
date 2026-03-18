@@ -8,7 +8,7 @@ import { TeleportService } from './teleport.service'
 export class TeleportProfileProvider extends ProfileProvider<LocalProfile> {
   id = 'teleport'
   name = 'Teleport'
-
+  private labelCache = new Map<string, string>()
   configDefaults = {
     options: {
       command: '',
@@ -63,23 +63,39 @@ export class TeleportProfileProvider extends ProfileProvider<LocalProfile> {
         }]
       }
 
-      const nodes = await this.teleport.listNodes()
+      const nodes = await this.teleport.listAllNodes()
       const user = this.config.store.teleport?.defaultUser ?? 'root'
 
-      return nodes.map(node => ({
-        id: `teleport:${node.spec.hostname}`,
-        type: 'local',
-        name: `Teleport: ${node.spec.hostname}`,
-        group: 'Teleport',
-        icon: 'fas fa-server',
-        options: {
-          command: tshPath,
-          args: ['ssh', `${user}@${node.spec.hostname}`],
-          ...hasEnv && { env },
-        },
-        isBuiltin: true,
-        isTemplate: false,
-      }))
+      this.labelCache.clear()
+      return nodes.map(node => {
+        const labels = node.metadata.labels ?? {}
+        const labelStr = Object.entries(labels)
+          .filter(([k]) => !k.startsWith('teleport.'))
+          .map(([k, v]) => `${k}=${v}`)
+          .join(', ')
+        const group = node.cluster ? `Teleport/${node.cluster}` : 'Teleport'
+        const sshArgs = ['ssh', `${user}@${node.spec.hostname}`]
+        if (node.cluster) {
+          sshArgs.push(`--cluster=${node.cluster}`)
+        }
+        const id = `teleport:${node.cluster ? node.cluster + '/' : ''}${node.spec.hostname}`
+        this.labelCache.set(id, labelStr)
+
+        return {
+          id,
+          type: 'teleport',
+          name: `Teleport: ${node.spec.hostname}`,
+          group,
+          icon: 'fas fa-server',
+          options: {
+            command: tshPath,
+            args: sshArgs,
+            ...hasEnv && { env },
+          },
+          isBuiltin: true,
+          isTemplate: false,
+        }
+      })
     } catch {
       return []
     }
@@ -97,7 +113,14 @@ export class TeleportProfileProvider extends ProfileProvider<LocalProfile> {
   }
 
   getDescription (profile: PartialProfile<LocalProfile>): string {
+    const labelStr = this.labelCache.get(profile.id ?? '')
+    if (labelStr) {
+      return labelStr
+    }
     const args = profile.options?.args ?? []
-    return args.length > 1 ? `tsh ssh ${args[1]}` : 'Teleport SSH'
+    if (args.length > 1) {
+      return `tsh ssh ${args[1]}`
+    }
+    return 'Teleport SSH'
   }
 }

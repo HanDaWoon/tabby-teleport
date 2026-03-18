@@ -1,0 +1,40 @@
+.modal-header
+  h4.modal-title Quick Connect
+  button.btn-close((click)="close()")
+
+.modal-body
+  .input-group.mb-3
+    span.input-group-text
+      i.fas.fa-search
+    input.form-control(
+      type="text",
+      [(ngModel)]="filter",
+      (ngModelChange)="onFilterChange()",
+      placeholder="Search by hostname, label, or address...",
+      autofocus,
+      (keydown.enter)="connectFirst()"
+    )
+
+  .text-center.py-4(*ngIf="loading")
+    i.fas.fa-spinner.fa-spin.me-2
+    | Loading nodes...
+
+  .text-muted.text-center.py-4(*ngIf="!loading && filteredNodes.length === 0")
+    | No nodes found.
+
+  .list-group(*ngIf="!loading && filteredNodes.length > 0")
+    button.list-group-item.list-group-item-action(
+      *ngFor="let node of filteredNodes; let i = index",
+      [class.active]="i === selectedIndex",
+      (click)="connect(node)",
+      (mouseenter)="selectedIndex = i"
+    )
+      .d-flex.justify-content-between.align-items-center
+        div
+          strong {{ node.spec.hostname }}
+          small.text-muted.ms-2 {{ node.spec.addr }}
+          small.text-muted.ms-2(*ngIf="node.cluster") ({{ node.cluster }})
+        div
+          span.badge.bg-secondary.me-1(
+            *ngFor="let tag of getNodeLabels(node)"
+          ) {{ tag }}

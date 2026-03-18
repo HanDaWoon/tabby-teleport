@@ -6,7 +6,9 @@ A [Tabby](https://tabby.sh) plugin that integrates [Teleport](https://goteleport
 
 ## Features
 
-- **Profile Integration** — Teleport nodes appear directly in Tabby's profile dropdown
+- **Profile Integration** — Teleport nodes appear directly in Tabby's profile dropdown with label-based search
+- **Quick Connect** — Toolbar button opens a searchable node picker with hostname relevance sorting
+- **Label Search** — Search nodes by labels in both profile selector and Quick Connect
 - **One-click SSH** — Select a node to open a `tsh ssh` terminal tab instantly
 - **Auto Login** — If not logged in, a "Teleport: Login" profile appears to run `tsh login` directly in Tabby
 - **Login Settings** — Configure proxy address, login user, auth type, and cluster for `tsh login`
