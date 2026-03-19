@@ -30,36 +30,55 @@ export class TeleportToolbarProvider extends ToolbarButtonProvider {
 
   async openPicker (): Promise<void> {
     const loggedIn = await this.teleport.isLoggedIn()
-    if (!loggedIn) {
+    let nodes: TeleportNode[]
+    let useAutoLogin = false
+
+    if (loggedIn) {
+      nodes = await this.teleport.listAllNodes()
+    } else if (this.teleport.hasCachedNodes()) {
+      nodes = this.teleport.getCachedNodes()
+      useAutoLogin = true
+    } else {
       this.teleport.notifyNotLoggedIn()
       return
     }
 
-    const nodes = await this.teleport.listAllNodes()
     const modalRef = this.modal.open(QuickConnectModalComponent, {
       size: 'lg',
       centered: true,
     })
     modalRef.componentInstance.nodes = nodes
+    modalRef.componentInstance.isStaleSession = useAutoLogin
 
     try {
       const node: TeleportNode = await modalRef.result
       if (node) {
-        this.connectToNode(node)
+        this.connectToNode(node, useAutoLogin)
       }
     } catch {
       // modal dismissed
     }
   }
 
-  private connectToNode (node: TeleportNode): void {
-    const tshPath = this.config.store.teleport?.tshPath ?? 'tsh'
-    const user = this.config.store.teleport?.defaultUser ?? 'root'
+  private connectToNode (node: TeleportNode, useAutoLogin = false): void {
     const env = this.config.store.teleport?.env ?? {}
     const hasEnv = Object.keys(env).length > 0
-    const sshArgs = ['ssh', `${user}@${node.spec.hostname}`]
-    if (node.cluster) {
-      sshArgs.push(`--cluster=${node.cluster}`)
+
+    let command: string
+    let args: string[]
+
+    if (useAutoLogin) {
+      const cmd = this.teleport.buildAutoLoginSshCommand(node.spec.hostname, node.cluster)
+      command = cmd.command
+      args = cmd.args
+    } else {
+      const tshPath = this.config.store.teleport?.tshPath ?? 'tsh'
+      const user = this.config.store.teleport?.defaultUser ?? 'root'
+      command = tshPath
+      args = ['ssh', `${user}@${node.spec.hostname}`]
+      if (node.cluster) {
+        args.push(`--cluster=${node.cluster}`)
+      }
     }
 
     const profile = {
@@ -67,8 +86,8 @@ export class TeleportToolbarProvider extends ToolbarButtonProvider {
       type: 'local',
       name: `Teleport: ${node.spec.hostname}`,
       options: {
-        command: tshPath,
-        args: sshArgs,
+        command,
+        args,
         ...hasEnv && { env },
       },
     }

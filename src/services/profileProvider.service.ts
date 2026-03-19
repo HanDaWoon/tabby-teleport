@@ -35,70 +35,103 @@ export class TeleportProfileProvider extends ProfileProvider<LocalProfile> {
       const env = this.config.store.teleport?.env ?? {}
       const hasEnv = Object.keys(env).length > 0
 
-      if (!loggedIn) {
-        const loginArgs = ['login']
-        const proxy = this.config.store.teleport?.proxy
-        const loginUser = this.config.store.teleport?.loginUser
-        const authType = this.config.store.teleport?.authType
-        const cluster = this.config.store.teleport?.cluster
-        if (proxy) { loginArgs.push(`--proxy=${proxy}`) }
-        if (loginUser) { loginArgs.push(`--user=${loginUser}`) }
-        if (authType) { loginArgs.push(`--auth=${authType}`) }
-        if (cluster) { loginArgs.push(cluster) }
+      const loginProfile: PartialProfile<LocalProfile> = this.buildLoginProfile(tshPath, env, hasEnv)
 
-        return [{
-          id: 'teleport:login',
-          type: 'local',
-          name: 'Teleport: Login',
-          group: 'Teleport',
-          icon: 'fas fa-sign-in-alt',
-          options: {
-            command: tshPath,
-            args: loginArgs,
-            pauseAfterExit: true,
-            ...hasEnv && { env },
-          },
-          isBuiltin: true,
-          isTemplate: false,
-        }]
+      if (loggedIn) {
+        const nodes = await this.teleport.listAllNodes()
+        return this.buildNodeProfiles(nodes, tshPath, env, hasEnv, false)
       }
 
-      const nodes = await this.teleport.listAllNodes()
-      const user = this.config.store.teleport?.defaultUser ?? 'root'
+      if (this.teleport.hasCachedNodes()) {
+        const nodes = this.teleport.getCachedNodes()
+        return [loginProfile, ...this.buildNodeProfiles(nodes, tshPath, env, hasEnv, true)]
+      }
 
-      this.labelCache.clear()
-      return nodes.map(node => {
-        const labels = node.metadata.labels ?? {}
-        const labelStr = Object.entries(labels)
-          .filter(([k]) => !k.startsWith('teleport.'))
-          .map(([k, v]) => `${k}=${v}`)
-          .join(', ')
-        const group = node.cluster ? `Teleport/${node.cluster}` : 'Teleport'
+      return [loginProfile]
+    } catch {
+      return []
+    }
+  }
+
+  private buildLoginProfile (tshPath: string, env: Record<string, string>, hasEnv: boolean): PartialProfile<LocalProfile> {
+    const loginArgs = ['login']
+    const proxy = this.config.store.teleport?.proxy
+    const loginUser = this.config.store.teleport?.loginUser
+    const authType = this.config.store.teleport?.authType
+    const cluster = this.config.store.teleport?.cluster
+    if (proxy) { loginArgs.push(`--proxy=${proxy}`) }
+    if (loginUser) { loginArgs.push(`--user=${loginUser}`) }
+    if (authType) { loginArgs.push(`--auth=${authType}`) }
+    if (cluster) { loginArgs.push(cluster) }
+
+    return {
+      id: 'teleport:login',
+      type: 'local',
+      name: 'Teleport: Login',
+      group: 'Teleport',
+      icon: 'fas fa-sign-in-alt',
+      options: {
+        command: tshPath,
+        args: loginArgs,
+        pauseAfterExit: true,
+        ...hasEnv && { env },
+      },
+      isBuiltin: true,
+      isTemplate: false,
+    }
+  }
+
+  private buildNodeProfiles (
+    nodes: import('../types').TeleportNode[],
+    tshPath: string,
+    env: Record<string, string>,
+    hasEnv: boolean,
+    useAutoLogin: boolean,
+  ): PartialProfile<LocalProfile>[] {
+    const user = this.config.store.teleport?.defaultUser ?? 'root'
+
+    this.labelCache.clear()
+    return nodes.map(node => {
+      const labels = node.metadata.labels ?? {}
+      const labelStr = Object.entries(labels)
+        .filter(([k]) => !k.startsWith('teleport.'))
+        .map(([k, v]) => `${k}=${v}`)
+        .join(', ')
+      const group = node.cluster ? `Teleport/${node.cluster}` : 'Teleport'
+      const id = `teleport:${node.cluster ? node.cluster + '/' : ''}${node.spec.hostname}`
+      this.labelCache.set(id, labelStr)
+
+      let options: any
+      if (useAutoLogin) {
+        const cmd = this.teleport.buildAutoLoginSshCommand(node.spec.hostname, node.cluster)
+        options = {
+          command: cmd.command,
+          args: cmd.args,
+          ...hasEnv && { env },
+        }
+      } else {
         const sshArgs = ['ssh', `${user}@${node.spec.hostname}`]
         if (node.cluster) {
           sshArgs.push(`--cluster=${node.cluster}`)
         }
-        const id = `teleport:${node.cluster ? node.cluster + '/' : ''}${node.spec.hostname}`
-        this.labelCache.set(id, labelStr)
-
-        return {
-          id,
-          type: 'teleport',
-          name: `Teleport: ${node.spec.hostname}`,
-          group,
-          icon: 'fas fa-server',
-          options: {
-            command: tshPath,
-            args: sshArgs,
-            ...hasEnv && { env },
-          },
-          isBuiltin: true,
-          isTemplate: false,
+        options = {
+          command: tshPath,
+          args: sshArgs,
+          ...hasEnv && { env },
         }
-      })
-    } catch {
-      return []
-    }
+      }
+
+      return {
+        id,
+        type: 'teleport',
+        name: `Teleport: ${node.spec.hostname}`,
+        group,
+        icon: 'fas fa-server',
+        options,
+        isBuiltin: true,
+        isTemplate: false,
+      }
+    })
   }
 
   async getNewTabParameters (profile: LocalProfile): Promise<NewTabParameters<TerminalTabComponent>> {

@@ -12,6 +12,7 @@ import { TeleportNode } from '../types'
 })
 export class QuickConnectModalComponent {
   @Input() nodes: TeleportNode[] = []
+  @Input() isStaleSession = false
   filter = ''
   filteredNodes: TeleportNode[] = []
   selectedIndex = 0

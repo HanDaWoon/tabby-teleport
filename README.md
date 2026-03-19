@@ -15,6 +15,8 @@ A [Tabby](https://tabby.sh) plugin that integrates [Teleport](https://goteleport
 - **Environment Variables** — Set custom environment variables (e.g. `TELEPORT_HOME`, `TSH_LOG`) for all tsh commands
 - **Settings Tab** — Configure `tsh` binary path, default SSH user, and more
 - **Connection Test** — Verify Teleport login status from Settings
+- **Node Caching** — Nodes are cached in memory so they remain visible even after session expiry
+- **Auto Re-login** — Selecting a cached node when session is expired automatically runs `tsh login && tsh ssh`
 - **Auto Discovery** — Nodes are fetched automatically via `tsh ls --format=json`
 
 ## Prerequisites

@@ -3,6 +3,10 @@
   button.btn-close((click)="close()")
 
 .modal-body
+  .alert.alert-warning.d-flex.align-items-center.mb-3(*ngIf="isStaleSession")
+    i.fas.fa-exclamation-triangle.me-2
+    small Session expired - selecting a node will automatically re-login and connect.
+
   .input-group.mb-3
     span.input-group-text
       i.fas.fa-search

@@ -1,13 +1,16 @@
 import { Injectable } from '@angular/core'
-import { ConfigService, NotificationsService } from 'tabby-core'
+import { ConfigService, NotificationsService, Platform, HostAppService } from 'tabby-core'
 import { execFile } from 'child_process'
 import { TeleportNode, TeleportCluster, TeleportConfig } from '../types'
 
 @Injectable({ providedIn: 'root' })
 export class TeleportService {
+  private nodeCache: TeleportNode[] = []
+
   constructor (
     private config: ConfigService,
     private notifications: NotificationsService,
+    private hostApp: HostAppService,
   ) {}
 
   private get teleportConfig (): TeleportConfig {
@@ -84,18 +87,62 @@ export class TeleportService {
   async listAllNodes (): Promise<TeleportNode[]> {
     try {
       const clusters = await this.listClusters()
+      let nodes: TeleportNode[]
       if (clusters.length <= 1) {
-        return this.listNodes()
+        nodes = await this.listNodes()
+      } else {
+        const results = await Promise.all(
+          clusters
+            .filter(c => c.status === 'online')
+            .map(c => this.listNodes(c.cluster_name)),
+        )
+        nodes = results.flat()
       }
-      const results = await Promise.all(
-        clusters
-          .filter(c => c.status === 'online')
-          .map(c => this.listNodes(c.cluster_name)),
-      )
-      return results.flat()
+      if (nodes.length > 0) {
+        this.nodeCache = nodes
+      }
+      return nodes
     } catch {
-      return this.listNodes()
+      const nodes = await this.listNodes()
+      if (nodes.length > 0) {
+        this.nodeCache = nodes
+      }
+      return nodes
     }
+  }
+
+  getCachedNodes (): TeleportNode[] {
+    return this.nodeCache
+  }
+
+  hasCachedNodes (): boolean {
+    return this.nodeCache.length > 0
+  }
+
+  buildAutoLoginSshCommand (hostname: string, cluster?: string): { command: string; args: string[] } {
+    const tshPath = this.teleportConfig.tshPath || 'tsh'
+    const user = this.config.store.teleport?.defaultUser ?? 'root'
+
+    const loginParts = [tshPath, 'login']
+    const proxy = this.teleportConfig.proxy
+    const loginUser = this.teleportConfig.loginUser
+    const authType = this.teleportConfig.authType
+    const configCluster = this.teleportConfig.cluster
+    if (proxy) { loginParts.push(`--proxy=${proxy}`) }
+    if (loginUser) { loginParts.push(`--user=${loginUser}`) }
+    if (authType) { loginParts.push(`--auth=${authType}`) }
+    if (configCluster) { loginParts.push(configCluster) }
+
+    const sshParts = [tshPath, 'ssh', `${user}@${hostname}`]
+    if (cluster) { sshParts.push(`--cluster=${cluster}`) }
+
+    const loginCmd = loginParts.join(' ')
+    const sshCmd = sshParts.join(' ')
+
+    if (this.hostApp.platform === Platform.Windows) {
+      return { command: 'cmd.exe', args: ['/c', `${loginCmd} & ${sshCmd}`] }
+    }
+    return { command: 'bash', args: ['-c', `${loginCmd} && ${sshCmd}`] }
   }
 
   notifyNotLoggedIn (): void {
