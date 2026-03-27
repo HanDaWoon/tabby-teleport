@@ -6,6 +6,8 @@ import { TeleportNode, TeleportCluster, TeleportConfig } from '../types'
 @Injectable({ providedIn: 'root' })
 export class TeleportService {
   private nodeCache: TeleportNode[] = []
+  private loginStatusCache: { value: boolean; time: number } | null = null
+  private static readonly LOGIN_CACHE_TTL = 10_000
 
   constructor (
     private config: ConfigService,
@@ -43,12 +45,18 @@ export class TeleportService {
     })
   }
 
-  async isLoggedIn (): Promise<boolean> {
+  async isLoggedIn (skipCache = false): Promise<boolean> {
+    if (!skipCache && this.loginStatusCache && (Date.now() - this.loginStatusCache.time) < TeleportService.LOGIN_CACHE_TTL) {
+      return this.loginStatusCache.value
+    }
     try {
       const output = await this.exec(['status', '--format=json'])
       const status = JSON.parse(output)
-      return !!status?.active
+      const value = !!status?.active
+      this.loginStatusCache = { value, time: Date.now() }
+      return value
     } catch {
+      this.loginStatusCache = { value: false, time: Date.now() }
       return false
     }
   }

@@ -9,6 +9,10 @@ export class TeleportProfileProvider extends ProfileProvider<LocalProfile> {
   id = 'teleport'
   name = 'Teleport'
   private labelCache = new Map<string, string>()
+  private profileCache: PartialProfile<LocalProfile>[] | null = null
+  private profileCacheTime = 0
+  private profileCachePromise: Promise<PartialProfile<LocalProfile>[]> | null = null
+  private static readonly CACHE_TTL = 30_000
   configDefaults = {
     options: {
       command: '',
@@ -28,6 +32,20 @@ export class TeleportProfileProvider extends ProfileProvider<LocalProfile> {
   }
 
   async getBuiltinProfiles (): Promise<PartialProfile<LocalProfile>[]> {
+    const now = Date.now()
+    if (this.profileCache && (now - this.profileCacheTime) < TeleportProfileProvider.CACHE_TTL) {
+      return this.profileCache
+    }
+    if (this.profileCachePromise) {
+      return this.profileCachePromise
+    }
+    this.profileCachePromise = this.fetchProfiles().finally(() => {
+      this.profileCachePromise = null
+    })
+    return this.profileCachePromise
+  }
+
+  private async fetchProfiles (): Promise<PartialProfile<LocalProfile>[]> {
     try {
       const loggedIn = await this.teleport.isLoggedIn()
       const tshPath = this.config.store.teleport?.tshPath ?? 'tsh'
@@ -37,17 +55,20 @@ export class TeleportProfileProvider extends ProfileProvider<LocalProfile> {
 
       const loginProfile: PartialProfile<LocalProfile> = this.buildLoginProfile(tshPath, env, hasEnv)
 
+      let result: PartialProfile<LocalProfile>[]
       if (loggedIn) {
         const nodes = await this.teleport.listAllNodes()
-        return this.buildNodeProfiles(nodes, tshPath, env, hasEnv, false)
-      }
-
-      if (this.teleport.hasCachedNodes()) {
+        result = this.buildNodeProfiles(nodes, tshPath, env, hasEnv, false)
+      } else if (this.teleport.hasCachedNodes()) {
         const nodes = this.teleport.getCachedNodes()
-        return [loginProfile, ...this.buildNodeProfiles(nodes, tshPath, env, hasEnv, true)]
+        result = [loginProfile, ...this.buildNodeProfiles(nodes, tshPath, env, hasEnv, true)]
+      } else {
+        result = [loginProfile]
       }
 
-      return [loginProfile]
+      this.profileCache = result
+      this.profileCacheTime = Date.now()
+      return result
     } catch {
       return []
     }

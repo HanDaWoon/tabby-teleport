@@ -66,12 +66,19 @@ export class QuickConnectModalComponent {
         if (!tokens.every(token => searchable.includes(token))) { return null }
 
         const hostname = node.spec.hostname.toLowerCase()
-        const score = tokens.reduce((s, token) => s + (hostname.includes(token) ? 1 : 0), 0)
+        const hostnameMatchCount = tokens.filter(token => hostname.includes(token)).length
+        const allInHostname = hostnameMatchCount === tokens.length
+        const exactStart = tokens.length > 0 && hostname.startsWith(tokens[0])
+
+        const score = (allInHostname ? 1000 : 0)
+          + (exactStart ? 500 : 0)
+          + hostnameMatchCount * 10
+
         return { node, score }
       })
       .filter((m): m is { node: TeleportNode; score: number } => m !== null)
 
-    matched.sort((a, b) => b.score - a.score)
+    matched.sort((a, b) => b.score - a.score || a.node.spec.hostname.localeCompare(b.node.spec.hostname))
     this.filteredNodes = matched.map(m => m.node)
   }
 
