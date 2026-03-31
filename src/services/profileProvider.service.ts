@@ -29,6 +29,11 @@ export class TeleportProfileProvider extends ProfileProvider<LocalProfile> {
     private teleport: TeleportService,
   ) {
     super()
+    this.config.changed$.subscribe(() => {
+      this.profileCache = null
+      this.profileCachePromise = null
+      this.teleport.clearLoginCache()
+    })
   }
 
   async getBuiltinProfiles (): Promise<PartialProfile<LocalProfile>[]> {

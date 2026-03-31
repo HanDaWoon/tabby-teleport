@@ -126,6 +126,10 @@ export class TeleportService {
     return this.nodeCache.length > 0
   }
 
+  clearLoginCache (): void {
+    this.loginStatusCache = null
+  }
+
   resolveUser (nodeLabels?: Record<string, string>): string {
     const defaultUser = this.config.store.teleport?.defaultUser ?? 'root'
     const overrides: UserOverrideRule[] = this.teleportConfig.userOverrides ?? []
@@ -149,28 +153,36 @@ export class TeleportService {
   buildAutoLoginSshCommand (hostname: string, cluster?: string, nodeLabels?: Record<string, string>): { command: string; args: string[] } {
     const tshPath = this.teleportConfig.tshPath || 'tsh'
     const user = this.resolveUser(nodeLabels)
+    const isWindows = this.hostApp.platform === Platform.Windows
+    const q = (s: string) => this.shellQuote(s, isWindows)
 
-    const quotedTshPath = tshPath.includes(' ') ? `"${tshPath}"` : tshPath
-    const loginParts = [quotedTshPath, 'login']
+    const loginParts = [q(tshPath), 'login']
     const proxy = this.teleportConfig.proxy
     const loginUser = this.teleportConfig.loginUser
     const authType = this.teleportConfig.authType
     const configCluster = this.teleportConfig.cluster
-    if (proxy) { loginParts.push(`--proxy=${proxy}`) }
-    if (loginUser) { loginParts.push(`--user=${loginUser}`) }
-    if (authType) { loginParts.push(`--auth=${authType}`) }
-    if (configCluster) { loginParts.push(configCluster) }
+    if (proxy) { loginParts.push(q(`--proxy=${proxy}`)) }
+    if (loginUser) { loginParts.push(q(`--user=${loginUser}`)) }
+    if (authType) { loginParts.push(q(`--auth=${authType}`)) }
+    if (configCluster) { loginParts.push(q(configCluster)) }
 
-    const sshParts = [quotedTshPath, 'ssh', `${user}@${hostname}`]
-    if (cluster) { sshParts.push(`--cluster=${cluster}`) }
+    const sshParts = [q(tshPath), 'ssh', q(`${user}@${hostname}`)]
+    if (cluster) { sshParts.push(q(`--cluster=${cluster}`)) }
 
     const loginCmd = loginParts.join(' ')
     const sshCmd = sshParts.join(' ')
 
-    if (this.hostApp.platform === Platform.Windows) {
+    if (isWindows) {
       return { command: 'cmd.exe', args: ['/c', `${loginCmd} && ${sshCmd}`] }
     }
     return { command: 'bash', args: ['-c', `${loginCmd} && ${sshCmd}`] }
+  }
+
+  private shellQuote (arg: string, isWindows: boolean): string {
+    if (isWindows) {
+      return `"${arg.replace(/"/g, '\\"')}"`
+    }
+    return `'${arg.replace(/'/g, "'\\''")}'`
   }
 
   async getTshVersion (): Promise<string | null> {
@@ -201,9 +213,4 @@ export class TeleportService {
     )
   }
 
-  notifyTshNotFound (): void {
-    this.notifications.error(
-      'tsh not found. Please install Teleport and configure the tsh path in Settings → Teleport.',
-    )
-  }
 }

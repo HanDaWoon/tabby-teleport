@@ -43,14 +43,9 @@ export class TeleportToolbarProvider extends ToolbarButtonProvider {
     instance.loading = true
     instance.refreshFn = () => this.loadNodes(instance, () => { modalRef.dismiss() })
 
-    let dismissed = false
-    modalRef.result.catch(() => { dismissed = true })
-
     await this.loadNodes(instance, () => {
       modalRef.dismiss()
     })
-
-    if (dismissed) { return }
 
     try {
       const node: TeleportNode = await modalRef.result

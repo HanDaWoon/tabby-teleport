@@ -3,13 +3,12 @@ const path = require('path')
 module.exports = {
   target: 'node',
   entry: 'src/index.ts',
-  devtool: 'source-map',
+  devtool: 'hidden-source-map',
   context: __dirname,
-  mode: 'development',
+  mode: 'production',
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: 'index.js',
-    pathinfo: true,
     libraryTarget: 'umd',
     devtoolModuleFilenameTemplate: 'webpack-tabby-teleport:///[resource-path]',
   },
@@ -27,10 +26,6 @@ module.exports = {
       {
         test: /\.pug$/,
         use: ['apply-loader', 'pug-loader'],
-      },
-      {
-        test: /\.scss$/,
-        use: ['style-loader', 'css-loader', 'sass-loader'],
       },
     ],
   },

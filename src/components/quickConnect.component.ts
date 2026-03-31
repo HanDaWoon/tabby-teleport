@@ -25,7 +25,6 @@ export class QuickConnectModalComponent implements OnInit, OnDestroy {
   filteredNodes: NodeView[] = []
   selectedIndex = 0
   loading = false
-  selectedNode: TeleportNode | null = null
   refreshFn: (() => void) | null = null
   private nodeViews: NodeView[] = []
   private debounceTimer: any = null
@@ -48,13 +47,13 @@ export class QuickConnectModalComponent implements OnInit, OnDestroy {
   }
 
   connect (nv: NodeView): void {
-    this.selectedNode = nv.node
     this.modalInstance.close(nv.node)
   }
 
   connectFirst (): void {
     if (this.filteredNodes.length > 0) {
-      this.connect(this.filteredNodes[this.selectedIndex])
+      const idx = Math.min(this.selectedIndex, this.filteredNodes.length - 1)
+      this.connect(this.filteredNodes[idx])
     }
   }
 
@@ -87,9 +86,6 @@ export class QuickConnectModalComponent implements OnInit, OnDestroy {
   }
 
   onFilterChange (): void {
-    if (this.nodeViews.length !== this.nodes.length) {
-      this.buildNodeViews()
-    }
     this.selectedIndex = 0
     const query = this.filter.toLowerCase().trim()
     const tokens = query.split(/\s+/).filter(Boolean)
