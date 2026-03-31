@@ -7,7 +7,7 @@ h5.mb-3 General
   input.form-control(
     type="text",
     [(ngModel)]="config.store.teleport.tshPath",
-    (ngModelChange)="config.save()",
+    (ngModelChange)="onConfigChange()",
     placeholder="tsh"
   )
   small.form-text.text-muted Path to the tsh binary. Leave as "tsh" if it's in your PATH.
@@ -17,7 +17,7 @@ h5.mb-3 General
   input.form-control(
     type="text",
     [(ngModel)]="config.store.teleport.defaultUser",
-    (ngModelChange)="config.save()",
+    (ngModelChange)="onConfigChange()",
     placeholder="root"
   )
   small.form-text.text-muted Default SSH username for Teleport connections.
@@ -29,7 +29,7 @@ h5.mt-4.mb-3 Login Settings
   input.form-control(
     type="text",
     [(ngModel)]="config.store.teleport.proxy",
-    (ngModelChange)="config.save()",
+    (ngModelChange)="onConfigChange()",
     placeholder="teleport.example.com:443"
   )
   small.form-text.text-muted Teleport proxy address (--proxy).
@@ -39,7 +39,7 @@ h5.mt-4.mb-3 Login Settings
   input.form-control(
     type="text",
     [(ngModel)]="config.store.teleport.loginUser",
-    (ngModelChange)="config.save()",
+    (ngModelChange)="onConfigChange()",
     placeholder=""
   )
   small.form-text.text-muted Teleport login username (--user). Leave empty to use the default.
@@ -48,7 +48,7 @@ h5.mt-4.mb-3 Login Settings
   label.form-label Auth Type
   select.form-control(
     [(ngModel)]="config.store.teleport.authType",
-    (ngModelChange)="config.save()"
+    (ngModelChange)="onConfigChange()"
   )
     option(value="") Default
     option(value="local") Local
@@ -62,7 +62,7 @@ h5.mt-4.mb-3 Login Settings
   input.form-control(
     type="text",
     [(ngModel)]="config.store.teleport.cluster",
-    (ngModelChange)="config.save()",
+    (ngModelChange)="onConfigChange()",
     placeholder=""
   )
   small.form-text.text-muted Teleport cluster name to login to. Leave empty for the default cluster.

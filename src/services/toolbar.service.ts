@@ -35,6 +35,35 @@ export class TeleportToolbarProvider extends ToolbarButtonProvider {
   }
 
   async openPicker (): Promise<void> {
+    const modalRef = this.modal.open(QuickConnectModalComponent, {
+      size: 'lg',
+      centered: true,
+    })
+    const instance = modalRef.componentInstance as QuickConnectModalComponent
+    instance.loading = true
+    instance.refreshFn = () => this.loadNodes(instance, () => { modalRef.dismiss() })
+
+    let dismissed = false
+    modalRef.result.catch(() => { dismissed = true })
+
+    await this.loadNodes(instance, () => {
+      modalRef.dismiss()
+    })
+
+    if (dismissed) { return }
+
+    try {
+      const node: TeleportNode = await modalRef.result
+      if (node) {
+        this.connectToNode(node, instance.isStaleSession)
+      }
+    } catch {
+      // modal dismissed
+    }
+  }
+
+  private async loadNodes (instance: QuickConnectModalComponent, onNoNodes?: () => void): Promise<void> {
+    instance.loading = true
     const loggedIn = await this.teleport.isLoggedIn()
     let nodes: TeleportNode[]
     let useAutoLogin = false
@@ -46,24 +75,16 @@ export class TeleportToolbarProvider extends ToolbarButtonProvider {
       useAutoLogin = true
     } else {
       this.teleport.notifyNotLoggedIn()
+      instance.loading = false
+      if (onNoNodes) { onNoNodes() }
       return
     }
 
-    const modalRef = this.modal.open(QuickConnectModalComponent, {
-      size: 'lg',
-      centered: true,
-    })
-    modalRef.componentInstance.nodes = nodes
-    modalRef.componentInstance.isStaleSession = useAutoLogin
-
-    try {
-      const node: TeleportNode = await modalRef.result
-      if (node) {
-        this.connectToNode(node, useAutoLogin)
-      }
-    } catch {
-      // modal dismissed
-    }
+    instance.nodes = nodes
+    instance.isStaleSession = useAutoLogin
+    instance.loading = false
+    instance.buildNodeViews()
+    instance.onFilterChange()
   }
 
   private connectToNode (node: TeleportNode, useAutoLogin = false): void {

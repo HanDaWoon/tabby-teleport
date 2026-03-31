@@ -17,6 +17,11 @@ export class TeleportSettingsComponent {
     private teleport: TeleportService,
   ) {}
 
+  onConfigChange (): void {
+    this.testResult = null
+    this.config.save()
+  }
+
   get envEntries (): [string, string][] {
     return Object.entries(this.config.store.teleport?.env ?? {})
   }
