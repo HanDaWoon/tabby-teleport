@@ -207,10 +207,4 @@ export class TeleportService {
     return { compatible: true, version }
   }
 
-  notifyNotLoggedIn (): void {
-    this.notifications.error(
-      'Not logged in to Teleport. Please run "tsh login" first.',
-    )
-  }
-
 }

@@ -69,9 +69,9 @@ export class TeleportToolbarProvider extends ToolbarButtonProvider {
       nodes = this.teleport.getCachedNodes()
       useAutoLogin = true
     } else {
-      this.teleport.notifyNotLoggedIn()
       instance.loading = false
       if (onNoNodes) { onNoNodes() }
+      this.openLoginTab()
       return
     }
 
@@ -80,6 +80,33 @@ export class TeleportToolbarProvider extends ToolbarButtonProvider {
     instance.loading = false
     instance.buildNodeViews()
     instance.onFilterChange()
+  }
+
+  private openLoginTab (): void {
+    const tshPath = this.config.store.teleport?.tshPath ?? 'tsh'
+    const env = this.config.store.teleport?.env ?? {}
+    const hasEnv = Object.keys(env).length > 0
+    const loginArgs = ['login']
+    const proxy = this.config.store.teleport?.proxy
+    const loginUser = this.config.store.teleport?.loginUser
+    const authType = this.config.store.teleport?.authType
+    const cluster = this.config.store.teleport?.cluster
+    if (proxy) { loginArgs.push(`--proxy=${proxy}`) }
+    if (loginUser) { loginArgs.push(`--user=${loginUser}`) }
+    if (authType) { loginArgs.push(`--auth=${authType}`) }
+    if (cluster) { loginArgs.push(cluster) }
+
+    this.profilesService.openNewTabForProfile({
+      id: 'teleport:login',
+      type: 'local',
+      name: 'Teleport: Login',
+      options: {
+        command: tshPath,
+        args: loginArgs,
+        pauseAfterExit: true,
+        ...hasEnv && { env },
+      },
+    } as any)
   }
 
   private connectToNode (node: TeleportNode, useAutoLogin = false): void {
