@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core'
 import { ConfigService, NotificationsService, Platform, HostAppService } from 'tabby-core'
 import { execFile } from 'child_process'
-import { TeleportNode, TeleportCluster, TeleportConfig } from '../types'
+import { TeleportNode, TeleportCluster, TeleportConfig, TeleportStatus } from '../types'
 
 @Injectable({ providedIn: 'root' })
 export class TeleportService {
@@ -36,10 +36,6 @@ export class TeleportService {
           }
           return
         }
-        if (stderr && stderr.includes('ERROR')) {
-          reject(new Error(stderr))
-          return
-        }
         resolve(stdout)
       })
     })
@@ -51,8 +47,11 @@ export class TeleportService {
     }
     try {
       const output = await this.exec(['status', '--format=json'])
-      const status = JSON.parse(output)
-      const value = !!status?.active
+      const status = JSON.parse(output) as TeleportStatus
+      let value = !!status?.active
+      if (value && status.active?.valid_until) {
+        value = new Date(status.active.valid_until).getTime() > Date.now()
+      }
       this.loginStatusCache = { value, time: Date.now() }
       return value
     } catch {
@@ -148,7 +147,7 @@ export class TeleportService {
     const sshCmd = sshParts.join(' ')
 
     if (this.hostApp.platform === Platform.Windows) {
-      return { command: 'cmd.exe', args: ['/c', `${loginCmd} & ${sshCmd}`] }
+      return { command: 'cmd.exe', args: ['/c', `${loginCmd} && ${sshCmd}`] }
     }
     return { command: 'bash', args: ['-c', `${loginCmd} && ${sshCmd}`] }
   }

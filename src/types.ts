@@ -13,6 +13,13 @@ export interface TeleportCluster {
   status: string
 }
 
+export interface TeleportStatus {
+  active?: {
+    valid_until: string
+    [key: string]: any
+  }
+}
+
 export interface TeleportConfig {
   tshPath: string
   defaultUser: string

@@ -144,7 +144,7 @@ export class TeleportProfileProvider extends ProfileProvider<LocalProfile> {
 
       return {
         id,
-        type: 'teleport',
+        type: 'local',
         name: `Teleport: ${node.spec.hostname}`,
         group,
         icon: 'fas fa-server',
