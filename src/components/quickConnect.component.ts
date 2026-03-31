@@ -66,11 +66,15 @@ export class QuickConnectModalComponent {
         if (!tokens.every(token => searchable.includes(token))) { return null }
 
         const hostname = node.spec.hostname.toLowerCase()
+        const labels = node.metadata.labels ?? {}
+        const labelValues = Object.values(labels).map(v => v.toLowerCase())
         const hostnameMatchCount = tokens.filter(token => hostname.includes(token)).length
         const allInHostname = hostnameMatchCount === tokens.length
         const exactStart = tokens.length > 0 && hostname.startsWith(tokens[0])
+        const exactLabelMatch = tokens.filter(token => labelValues.some(v => v === token)).length
 
         const score = (allInHostname ? 1000 : 0)
+          + exactLabelMatch * 200
           + (exactStart ? 500 : 0)
           + hostnameMatchCount * 10
 
