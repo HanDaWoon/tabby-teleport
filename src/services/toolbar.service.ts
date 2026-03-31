@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core'
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap'
-import { ConfigService, ToolbarButtonProvider, ToolbarButton, ProfilesService } from 'tabby-core'
+import { ConfigService, ToolbarButtonProvider, ToolbarButton, ProfilesService, HotkeysService } from 'tabby-core'
 import { TeleportService } from './teleport.service'
 import { QuickConnectModalComponent } from '../components/quickConnect.component'
 import { TeleportNode } from '../types'
@@ -16,8 +16,14 @@ export class TeleportToolbarProvider extends ToolbarButtonProvider {
     private teleport: TeleportService,
     private config: ConfigService,
     private profilesService: ProfilesService,
+    hotkeys: HotkeysService,
   ) {
     super()
+    hotkeys.hotkey$.subscribe(hotkey => {
+      if (hotkey === 'teleport-quick-connect') {
+        this.openPicker()
+      }
+    })
   }
 
   provide (): ToolbarButton[] {

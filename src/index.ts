@@ -2,13 +2,14 @@ import { CommonModule } from '@angular/common'
 import { FormsModule } from '@angular/forms'
 import { NgModule } from '@angular/core'
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap'
-import TabbyCoreModule, { ConfigProvider, ProfileProvider, ToolbarButtonProvider } from 'tabby-core'
+import TabbyCoreModule, { ConfigProvider, ProfileProvider, ToolbarButtonProvider, HotkeyProvider } from 'tabby-core'
 import { SettingsTabProvider } from 'tabby-settings'
 
 import { TeleportProfileProvider } from './services/profileProvider.service'
 import { TeleportToolbarProvider } from './services/toolbar.service'
 import { TeleportConfigProvider } from './config'
 import { TeleportSettingsTabProvider } from './settings'
+import { TeleportHotkeyProvider } from './hotkeys'
 import { TeleportSettingsComponent } from './components/teleportSettings.component'
 import { QuickConnectModalComponent } from './components/quickConnect.component'
 
@@ -28,6 +29,7 @@ import { QuickConnectModalComponent } from './components/quickConnect.component'
     { provide: SettingsTabProvider, useClass: TeleportSettingsTabProvider, multi: true },
     { provide: ProfileProvider, useClass: TeleportProfileProvider, multi: true },
     { provide: ToolbarButtonProvider, useClass: TeleportToolbarProvider, multi: true },
+    { provide: HotkeyProvider, useClass: TeleportHotkeyProvider, multi: true },
   ],
 })
 export default class TeleportModule {}
