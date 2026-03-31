@@ -123,7 +123,7 @@ export class TeleportProfileProvider extends ProfileProvider<LocalProfile> {
 
       let options: any
       if (useAutoLogin) {
-        const cmd = this.teleport.buildAutoLoginSshCommand(node.spec.hostname, node.cluster)
+        const cmd = this.teleport.buildAutoLoginSshCommand(node.spec.hostname, node.cluster, labels)
         options = {
           command: cmd.command,
           args: cmd.args,
@@ -132,7 +132,7 @@ export class TeleportProfileProvider extends ProfileProvider<LocalProfile> {
       } else {
         options = {
           command: tshPath,
-          args: this.teleport.buildSshArgs(node.spec.hostname, node.cluster),
+          args: this.teleport.buildSshArgs(node.spec.hostname, node.cluster, labels),
           ...hasEnv && { env },
         }
       }

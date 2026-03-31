@@ -12,6 +12,7 @@ export class TeleportConfigProvider extends ConfigProvider {
       authType: '',
       cluster: '',
       env: {},
+      userOverrides: [],
     },
     hotkeys: {
       'teleport-quick-connect': [],

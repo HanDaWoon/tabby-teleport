@@ -90,17 +90,18 @@ export class TeleportToolbarProvider extends ToolbarButtonProvider {
   private connectToNode (node: TeleportNode, useAutoLogin = false): void {
     const env = this.config.store.teleport?.env ?? {}
     const hasEnv = Object.keys(env).length > 0
+    const labels = node.metadata.labels ?? {}
 
     let command: string
     let args: string[]
 
     if (useAutoLogin) {
-      const cmd = this.teleport.buildAutoLoginSshCommand(node.spec.hostname, node.cluster)
+      const cmd = this.teleport.buildAutoLoginSshCommand(node.spec.hostname, node.cluster, labels)
       command = cmd.command
       args = cmd.args
     } else {
       command = this.config.store.teleport?.tshPath ?? 'tsh'
-      args = this.teleport.buildSshArgs(node.spec.hostname, node.cluster)
+      args = this.teleport.buildSshArgs(node.spec.hostname, node.cluster, labels)
     }
 
     const profile = {

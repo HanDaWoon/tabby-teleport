@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core'
 import { ConfigService, NotificationsService, Platform, HostAppService } from 'tabby-core'
 import { execFile } from 'child_process'
-import { TeleportNode, TeleportCluster, TeleportConfig, TeleportStatus } from '../types'
+import { TeleportNode, TeleportCluster, TeleportConfig, TeleportStatus, UserOverrideRule } from '../types'
 
 @Injectable({ providedIn: 'root' })
 export class TeleportService {
@@ -126,16 +126,29 @@ export class TeleportService {
     return this.nodeCache.length > 0
   }
 
-  buildSshArgs (hostname: string, cluster?: string): string[] {
-    const user = this.config.store.teleport?.defaultUser ?? 'root'
+  resolveUser (nodeLabels?: Record<string, string>): string {
+    const defaultUser = this.config.store.teleport?.defaultUser ?? 'root'
+    const overrides: UserOverrideRule[] = this.teleportConfig.userOverrides ?? []
+    if (!nodeLabels || overrides.length === 0) { return defaultUser }
+    for (const rule of overrides) {
+      const [key, val] = rule.label.split('=', 2)
+      if (key && val && nodeLabels[key] === val) {
+        return rule.user
+      }
+    }
+    return defaultUser
+  }
+
+  buildSshArgs (hostname: string, cluster?: string, nodeLabels?: Record<string, string>): string[] {
+    const user = this.resolveUser(nodeLabels)
     const args = ['ssh', `${user}@${hostname}`]
     if (cluster) { args.push(`--cluster=${cluster}`) }
     return args
   }
 
-  buildAutoLoginSshCommand (hostname: string, cluster?: string): { command: string; args: string[] } {
+  buildAutoLoginSshCommand (hostname: string, cluster?: string, nodeLabels?: Record<string, string>): { command: string; args: string[] } {
     const tshPath = this.teleportConfig.tshPath || 'tsh'
-    const user = this.config.store.teleport?.defaultUser ?? 'root'
+    const user = this.resolveUser(nodeLabels)
 
     const quotedTshPath = tshPath.includes(' ') ? `"${tshPath}"` : tshPath
     const loginParts = [quotedTshPath, 'login']
@@ -158,6 +171,28 @@ export class TeleportService {
       return { command: 'cmd.exe', args: ['/c', `${loginCmd} && ${sshCmd}`] }
     }
     return { command: 'bash', args: ['-c', `${loginCmd} && ${sshCmd}`] }
+  }
+
+  async getTshVersion (): Promise<string | null> {
+    try {
+      const output = await this.exec(['version'])
+      const match = output.match(/Teleport v(\d+\.\d+\.\d+)/)
+      return match ? match[1] : null
+    } catch {
+      return null
+    }
+  }
+
+  async checkTshCompatibility (): Promise<{ compatible: boolean; version: string | null; message?: string }> {
+    const version = await this.getTshVersion()
+    if (!version) {
+      return { compatible: false, version: null, message: 'tsh not found or version could not be determined.' }
+    }
+    const [major] = version.split('.').map(Number)
+    if (major < 10) {
+      return { compatible: false, version, message: `tsh v${version} may not support --format=json. Please upgrade to v10+.` }
+    }
+    return { compatible: true, version }
   }
 
   notifyNotLoggedIn (): void {

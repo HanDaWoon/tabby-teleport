@@ -1,5 +1,12 @@
 h3.mb-4 Teleport Settings
 
+.alert.alert-danger.d-flex.align-items-center(*ngIf="tshWarning")
+  i.fas.fa-exclamation-circle.me-2
+  | {{ tshWarning }}
+
+.text-muted.mb-3(*ngIf="tshVersion")
+  small tsh version: v{{ tshVersion }}
+
 h5.mb-3 General
 
 .form-group.mb-3
@@ -89,6 +96,30 @@ small.form-text.text-muted.mb-3.d-block Environment variables to set when runnin
     placeholder="value"
   )
   button.btn.btn-outline-primary((click)="addEnvVar()")
+    i.fas.fa-plus
+
+h5.mt-4.mb-3 SSH User Overrides
+small.form-text.text-muted.mb-3.d-block Override SSH user per node label. First matching rule wins (e.g. label "env=prod", user "ec2-user").
+
+.mb-2(*ngFor="let rule of config.store.teleport.userOverrides; let i = index")
+  .input-group
+    input.form-control(type="text", [value]="rule.label", disabled)
+    input.form-control(type="text", [value]="rule.user", disabled)
+    button.btn.btn-outline-danger((click)="removeUserOverride(i)")
+      i.fas.fa-trash
+
+.input-group.mb-3
+  input.form-control(
+    type="text",
+    [(ngModel)]="newOverrideLabel",
+    placeholder="key=value"
+  )
+  input.form-control(
+    type="text",
+    [(ngModel)]="newOverrideUser",
+    placeholder="ssh user"
+  )
+  button.btn.btn-outline-primary((click)="addUserOverride()")
     i.fas.fa-plus
 
 .mt-4

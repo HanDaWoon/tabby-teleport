@@ -20,6 +20,11 @@ export interface TeleportStatus {
   }
 }
 
+export interface UserOverrideRule {
+  label: string
+  user: string
+}
+
 export interface TeleportConfig {
   tshPath: string
   defaultUser: string
@@ -28,4 +33,5 @@ export interface TeleportConfig {
   authType: string
   cluster: string
   env: Record<string, string>
+  userOverrides: UserOverrideRule[]
 }
