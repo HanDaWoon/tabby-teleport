@@ -1,4 +1,4 @@
-import { Component, Input, HostListener } from '@angular/core'
+import { Component, Input, HostListener, OnInit } from '@angular/core'
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap'
 import { TeleportNode } from '../types'
 
@@ -10,7 +10,7 @@ import { TeleportNode } from '../types'
     .badge { font-weight: normal; font-size: 0.75em; }
   `],
 })
-export class QuickConnectModalComponent {
+export class QuickConnectModalComponent implements OnInit {
   @Input() nodes: TeleportNode[] = []
   @Input() isStaleSession = false
   filter = ''

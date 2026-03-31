@@ -47,7 +47,7 @@ export class TeleportService {
     }
     try {
       const output = await this.exec(['status', '--format=json'])
-      const status = JSON.parse(output) as TeleportStatus
+      const status = JSON.parse(output.trim()) as TeleportStatus
       let value = !!status?.active
       if (value && status.active?.valid_until) {
         value = new Date(status.active.valid_until).getTime() > Date.now()
@@ -70,7 +70,7 @@ export class TeleportService {
         args.push(`--search=${search}`)
       }
       const output = await this.exec(args, 10000)
-      const nodes = JSON.parse(output) as TeleportNode[]
+      const nodes = JSON.parse(output.trim()) as TeleportNode[]
       if (cluster) {
         nodes.forEach(n => n.cluster = cluster)
       }
@@ -84,7 +84,7 @@ export class TeleportService {
   async listClusters (): Promise<TeleportCluster[]> {
     try {
       const output = await this.exec(['clusters', '--format=json'])
-      return JSON.parse(output) as TeleportCluster[]
+      return JSON.parse(output.trim()) as TeleportCluster[]
     } catch (err: any) {
       this.notifications.error(`Failed to list Teleport clusters: ${err.message}`)
       return []
@@ -126,11 +126,19 @@ export class TeleportService {
     return this.nodeCache.length > 0
   }
 
+  buildSshArgs (hostname: string, cluster?: string): string[] {
+    const user = this.config.store.teleport?.defaultUser ?? 'root'
+    const args = ['ssh', `${user}@${hostname}`]
+    if (cluster) { args.push(`--cluster=${cluster}`) }
+    return args
+  }
+
   buildAutoLoginSshCommand (hostname: string, cluster?: string): { command: string; args: string[] } {
     const tshPath = this.teleportConfig.tshPath || 'tsh'
     const user = this.config.store.teleport?.defaultUser ?? 'root'
 
-    const loginParts = [tshPath, 'login']
+    const quotedTshPath = tshPath.includes(' ') ? `"${tshPath}"` : tshPath
+    const loginParts = [quotedTshPath, 'login']
     const proxy = this.teleportConfig.proxy
     const loginUser = this.teleportConfig.loginUser
     const authType = this.teleportConfig.authType
@@ -140,7 +148,7 @@ export class TeleportService {
     if (authType) { loginParts.push(`--auth=${authType}`) }
     if (configCluster) { loginParts.push(configCluster) }
 
-    const sshParts = [tshPath, 'ssh', `${user}@${hostname}`]
+    const sshParts = [quotedTshPath, 'ssh', `${user}@${hostname}`]
     if (cluster) { sshParts.push(`--cluster=${cluster}`) }
 
     const loginCmd = loginParts.join(' ')

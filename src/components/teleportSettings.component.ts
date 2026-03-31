@@ -40,7 +40,7 @@ export class TeleportSettingsComponent {
   async testConnection (): Promise<void> {
     this.testResult = null
     try {
-      const loggedIn = await this.teleport.isLoggedIn()
+      const loggedIn = await this.teleport.isLoggedIn(true)
       if (loggedIn) {
         this.testResult = 'success'
       } else {

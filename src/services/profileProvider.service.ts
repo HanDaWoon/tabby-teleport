@@ -69,7 +69,8 @@ export class TeleportProfileProvider extends ProfileProvider<LocalProfile> {
       this.profileCache = result
       this.profileCacheTime = Date.now()
       return result
-    } catch {
+    } catch (err) {
+      console.error('Teleport: failed to fetch profiles', err)
       return []
     }
   }
@@ -109,8 +110,6 @@ export class TeleportProfileProvider extends ProfileProvider<LocalProfile> {
     hasEnv: boolean,
     useAutoLogin: boolean,
   ): PartialProfile<LocalProfile>[] {
-    const user = this.config.store.teleport?.defaultUser ?? 'root'
-
     this.labelCache.clear()
     return nodes.map(node => {
       const labels = node.metadata.labels ?? {}
@@ -131,13 +130,9 @@ export class TeleportProfileProvider extends ProfileProvider<LocalProfile> {
           ...hasEnv && { env },
         }
       } else {
-        const sshArgs = ['ssh', `${user}@${node.spec.hostname}`]
-        if (node.cluster) {
-          sshArgs.push(`--cluster=${node.cluster}`)
-        }
         options = {
           command: tshPath,
-          args: sshArgs,
+          args: this.teleport.buildSshArgs(node.spec.hostname, node.cluster),
           ...hasEnv && { env },
         }
       }

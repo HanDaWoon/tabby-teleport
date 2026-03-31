@@ -78,13 +78,8 @@ export class TeleportToolbarProvider extends ToolbarButtonProvider {
       command = cmd.command
       args = cmd.args
     } else {
-      const tshPath = this.config.store.teleport?.tshPath ?? 'tsh'
-      const user = this.config.store.teleport?.defaultUser ?? 'root'
-      command = tshPath
-      args = ['ssh', `${user}@${node.spec.hostname}`]
-      if (node.cluster) {
-        args.push(`--cluster=${node.cluster}`)
-      }
+      command = this.config.store.teleport?.tshPath ?? 'tsh'
+      args = this.teleport.buildSshArgs(node.spec.hostname, node.cluster)
     }
 
     const profile = {
